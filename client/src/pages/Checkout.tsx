@@ -1,19 +1,21 @@
 /*
   DESIGN: "Elevated Essentials" — Checkout Page
   - Clean form layout with order summary sidebar
+  - Auto-fills with random fake data on each page load
   - Fires Purchase event on completion
   - Fires Lead event for email capture
 */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { trackPurchase, trackLead } from "@/lib/meta-pixel";
+import { generateFakeCheckoutData } from "@/lib/fake-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { CheckCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
 
 export default function Checkout() {
   const { items, totalPrice, totalItems, clearCart } = useCart();
@@ -27,7 +29,45 @@ export default function Checkout() {
     state: "",
     zip: "",
     phone: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
   });
+
+  // Auto-fill with random fake data on mount
+  useEffect(() => {
+    const fake = generateFakeCheckoutData();
+    setFormData({
+      email: fake.email,
+      firstName: fake.firstName,
+      lastName: fake.lastName,
+      address: fake.address,
+      city: fake.city,
+      state: fake.state,
+      zip: fake.zip,
+      phone: fake.phone,
+      cardNumber: fake.cardNumber,
+      expiry: fake.expiry,
+      cvv: fake.cvv,
+    });
+  }, []);
+
+  const regenerateData = () => {
+    const fake = generateFakeCheckoutData();
+    setFormData({
+      email: fake.email,
+      firstName: fake.firstName,
+      lastName: fake.lastName,
+      address: fake.address,
+      city: fake.city,
+      state: fake.state,
+      zip: fake.zip,
+      phone: fake.phone,
+      cardNumber: fake.cardNumber,
+      expiry: fake.expiry,
+      cvv: fake.cvv,
+    });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -97,7 +137,18 @@ export default function Checkout() {
           Continue Shopping
         </Link>
 
-        <h1 className="text-3xl lg:text-4xl mb-10">Checkout</h1>
+        <div className="flex items-center justify-between mb-10">
+          <h1 className="text-3xl lg:text-4xl">Checkout</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={regenerateData}
+            className="gap-1.5 text-xs"
+          >
+            <RefreshCw size={12} />
+            Randomize Data
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           {/* Form */}
@@ -127,7 +178,7 @@ export default function Checkout() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone (optional)</Label>
+                  <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
                     name="phone"
@@ -220,15 +271,55 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* Payment placeholder */}
+            {/* Payment */}
             <div>
               <h2 className="text-lg font-[family-name:var(--font-display)] mb-4">
                 Payment
               </h2>
-              <div className="p-6 border border-border rounded-sm bg-secondary/30 text-center">
-                <p className="text-sm text-muted-foreground">
-                  This is a demo store. No real payment will be processed.
-                </p>
+              <div className="space-y-4">
+                <div className="p-3 border border-dashed border-border rounded-sm bg-secondary/20 text-center mb-4">
+                  <p className="text-xs text-muted-foreground">
+                    Demo store — no real payment processed
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="cardNumber">Card Number</Label>
+                  <Input
+                    id="cardNumber"
+                    name="cardNumber"
+                    required
+                    value={formData.cardNumber}
+                    onChange={handleChange}
+                    placeholder="4242 4242 4242 4242"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="expiry">Expiry</Label>
+                    <Input
+                      id="expiry"
+                      name="expiry"
+                      required
+                      value={formData.expiry}
+                      onChange={handleChange}
+                      placeholder="MM/YY"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input
+                      id="cvv"
+                      name="cvv"
+                      required
+                      value={formData.cvv}
+                      onChange={handleChange}
+                      placeholder="123"
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

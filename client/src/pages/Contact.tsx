@@ -4,13 +4,14 @@
   - Fires Contact and Lead events
 */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trackContact, trackLead } from "@/lib/meta-pixel";
+import { generateFakeContactData } from "@/lib/fake-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { CheckCircle, Mail, MapPin, Phone } from "lucide-react";
+import { CheckCircle, Mail, MapPin, Phone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Contact() {
@@ -18,9 +19,26 @@ export default function Contact() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     subject: "",
     message: "",
   });
+
+  // Auto-fill with random fake data on mount
+  useEffect(() => {
+    fillRandom();
+  }, []);
+
+  const fillRandom = () => {
+    const fake = generateFakeContactData();
+    setFormData({
+      name: `${fake.firstName} ${fake.lastName}`,
+      email: fake.email,
+      phone: fake.phone,
+      subject: "Product inquiry",
+      message: fake.message,
+    });
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -152,6 +170,12 @@ export default function Contact() {
               onSubmit={handleSubmit}
               className="lg:col-span-3 space-y-6"
             >
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={fillRandom} className="gap-1.5 text-xs">
+                  <RefreshCw size={12} />
+                  Randomize Data
+                </Button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Full Name</Label>
