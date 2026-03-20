@@ -6,12 +6,36 @@
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Demo E-Commerce Store</title>    
-    <!-- THIS IS THE START OF A COMMENT BLOCK, BLOCK TO BE DELETED: Google Fonts here, example:
+    <title>Elevé — Curated Essentials</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    THIS IS THE END OF A COMMENT BLOCK, BLOCK TO BE DELETED -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Meta Pixel Code -->
+    <!-- INTENTIONAL GAPS FOR SKILL TESTING:
+         1. Using a placeholder pixel ID (should be real)
+         2. No noscript fallback image tag
+         3. No advanced matching parameters in fbq('init')
+         4. No content_type or content_ids in PageView (not required but shows gap)
+         5. Pixel loaded synchronously (could be async)
+    -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      
+      // IMPROVEMENT OPPORTUNITY: No advanced matching data passed to init
+      // Best practice: fbq('init', 'PIXEL_ID', { em: 'email', fn: 'first_name', ... })
+      fbq('init', '123456789012345');
+      fbq('track', 'PageView');
+    </script>
+    <!-- IMPROVEMENT OPPORTUNITY: Missing noscript fallback -->
+    <!-- End Meta Pixel Code -->
   </head>
 
   <body>
