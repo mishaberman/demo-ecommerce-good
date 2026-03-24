@@ -1,13 +1,20 @@
 /**
  * Meta Pixel & Conversions API Helper — GOOD Implementation
  * 
- * Solid pixel setup with basic CAPI. Notable gaps:
+ * Solid pixel setup with server-side CAPI proxy. Notable gaps:
  * - Advanced matching only has em and ph (missing fn, ln, external_id)
  * - event_id only on Purchase and AddToCart (not all events)
- * - CAPI missing most user_data fields (no fbc, em, ph, fn, ln, external_id)
- * - No PII hashing
- * - No data_processing_options
- * - No Search event
+ * - CAPI sends to server-side proxy (access token NOT exposed client-side)
+ * - Server handles hashing and IP enrichment, but frontend still has gaps:
+ *   - Missing fbc cookie in user_data
+ *   - Missing most PII fields (only sends fbp)
+ *   - No data_processing_options
+ *   - No Search event
+ * 
+ * CAPI METHOD: Server-Side Proxy (with intentional client-side gaps)
+ *   Frontend sends limited user_data to backend CAPI proxy.
+ *   Backend handles hashing and IP/UA enrichment, but can only work with
+ *   what the frontend sends — and this frontend sends very little.
  */
 
 declare global {
@@ -18,7 +25,9 @@ declare global {
 }
 
 const PIXEL_ID = '1684145446350033';
-const CAPI_ACCESS_TOKEN = 'EAAEDq1LHx1gBRPAEq5cUOKS5JrrvMif65SN8ysCUrX5t0SUZB3ETInM6Pt71VHea0bowwEehinD0oZAeSmIPWivziiVu0FuEIcsmgvT3fiqZADKQDiFgKdsugONbJXELgvLuQxHT0krELKt3DPhm0EyUa44iXu8uaZBZBddgVmEnFdNMBmsWmYJdOT17DTitYKwZDZD';
+
+// CAPI Backend Proxy URL — access token is stored server-side only
+const CAPI_PROXY_URL = 'https://demoshop-fpx9kus8.manus.space/api/capi/event';
 
 function generateEventId(): string {
   return 'eid_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
@@ -133,53 +142,59 @@ export function trackContact() {
 // No trackSearch — Search event not implemented
 
 // ============================================================
-// CONVERSIONS API — Basic implementation with gaps
+// CONVERSIONS API — Server-Side Proxy (with intentional gaps)
 // ============================================================
 
 interface CAPIEventData { [key: string]: unknown; }
 
+/**
+ * Send event to the backend CAPI proxy server.
+ * 
+ * The backend handles hashing and IP/UA enrichment, but this frontend
+ * intentionally sends minimal user_data to demonstrate a "good but not great"
+ * implementation. Key gaps:
+ * - Only sends fbp (missing fbc cookie)
+ * - Does NOT send em, ph, fn, ln, external_id (even though backend could hash them)
+ * - No data_processing_options
+ * - event_id only present for some events (AddToCart, Purchase)
+ */
 async function sendCAPIEvent(eventName: string, eventData: CAPIEventData, eventId?: string) {
-  // user_data only has client_user_agent and fbp
+  // user_data only has fbp — intentionally missing most PII fields
   // MISSING: fbc, em, ph, fn, ln, external_id
   const userData: Record<string, unknown> = {
-    client_user_agent: navigator.userAgent,
     fbp: getCookie('_fbp') || undefined,
     // MISSING: fbc cookie
-    // MISSING: em (hashed email)
-    // MISSING: ph (hashed phone)
-    // MISSING: fn (hashed first name)
-    // MISSING: ln (hashed last name)
+    // MISSING: em (email — server would hash it)
+    // MISSING: ph (phone — server would hash it)
+    // MISSING: fn (first name — server would hash it)
+    // MISSING: ln (last name — server would hash it)
     // MISSING: external_id
   };
 
   Object.keys(userData).forEach(key => { if (userData[key] === undefined) delete userData[key]; });
 
   const payload = {
-    data: [{
-      event_name: eventName,
-      event_time: Math.floor(Date.now() / 1000),
-      ...(eventId ? { event_id: eventId } : {}), // Only some events have event_id
-      action_source: 'website',
-      event_source_url: window.location.href,
-      user_data: userData,
-      custom_data: eventData,
-      // MISSING: data_processing_options
-      // MISSING: data_processing_options_country
-      // MISSING: data_processing_options_state
-    }],
-    access_token: CAPI_ACCESS_TOKEN,
+    event_name: eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    ...(eventId ? { event_id: eventId } : {}), // Only some events have event_id
+    action_source: 'website',
+    event_source_url: window.location.href,
+    user_data: userData,
+    custom_data: eventData,
+    // MISSING: data_processing_options
+    // MISSING: data_processing_options_country
+    // MISSING: data_processing_options_state
   };
 
-  const capiEndpoint = `https://graph.facebook.com/v21.0/${PIXEL_ID}/events`;
-
   try {
-    const response = await fetch(capiEndpoint, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(CAPI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const result = await response.json();
-    console.log(`[CAPI] Sent ${eventName}:`, result);
+    console.log(`[CAPI Server] Sent ${eventName}:`, result);
   } catch (err) {
-    console.error(`[CAPI] Failed to send ${eventName}:`, err);
+    console.error(`[CAPI Server] Failed to send ${eventName}:`, err);
   }
 }
