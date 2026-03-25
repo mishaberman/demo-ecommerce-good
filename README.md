@@ -1,145 +1,77 @@
-# demo-ecommerce-good
+# Demo E-Commerce: Good Variant <img src="https://img.shields.io/badge/Grade-B-yellow" alt="Grade B" />
 
-## Overview
-This variant demonstrates a **good but imperfect** Meta Pixel and Conversions API (CAPI) implementation. It uses a server-side proxy for CAPI events but has several intentional gaps: no PII hashing, no data processing options, no batch endpoint, and limited user data fields. This is part of a collection of demo e-commerce sites that showcase different levels of Meta Pixel and CAPI implementation quality.
+This 'Good' variant demonstrates a solid but incomplete implementation of the Meta Pixel and Conversions API. It correctly uses a server-side proxy for secure handling of the access token, includes event deduplication to prevent double counting, and implements basic server-side hashing of user data. However, it lacks more advanced features like phone number normalization before hashing, batching support for events, and robust error handling with a retry mechanism. This variant represents a realistic 'good enough' implementation that many advertisers might have in production.
 
-**Live Site:** https://mishaberman.github.io/demo-ecommerce-good/
-**Quality Grade:** B+
+### Quick Facts
 
-## Architecture
+| Feature | Details |
+|---|---|
+| Pixel ID | `1684145446350033` |
+| CAPI Method | Server-side proxy via Vercel (`meta-capi-proxy-tau.vercel.app`) |
+| Grade | B (60/100) |
+| Live Site | [https://mishaberman.github.io/demo-ecommerce-good/](https://mishaberman.github.io/demo-ecommerce-good/) |
+| GitHub Repo | [https://github.com/mishaberman/demo-ecommerce-good](https://github.com/mishaberman/demo-ecommerce-good) |
 
-```
-┌──────────────┐     fbq() events      ┌──────────────────┐
-│   Browser    │ ──────────────────────>│   Meta Pixel     │
-│  (React SPA) │                        │   (Client-Side)  │
-│              │     POST /api/capi/*   └──────────────────┘
-│              │ ──────────────────────>┌──────────────────┐
-└──────────────┘                        │  CAPI Proxy      │
-                                        │  (Express.js)    │
-                                        │  - IP enrichment │
-                                        │  - UA enrichment │
-                                        │  - NO PII hashing│
-                                        │  - NO LDU        │
-                                        └───────┬──────────┘
-                                                │ POST graph.facebook.com
-                                                ▼
-                                        ┌──────────────────┐
-                                        │  Meta Conversions│
-                                        │  API (Server)    │
-                                        └──────────────────┘
-```
+### What's Implemented
 
-### Frontend (`src/`)
-- Vite + React + TypeScript SPA deployed to GitHub Pages
-- Fires `fbq()` pixel events with `eventID` for deduplication
-- Sends matching events to the CAPI proxy server with the same `event_id`
-- Collects basic user data (email, phone) but not full address fields
+- [x] **Meta Pixel Base Code:** The base pixel is firing on all pages.
+- [x] **Standard Events:** Key e-commerce events are tracked (ViewContent, AddToCart, InitiateCheckout, Purchase, Lead, Search, CompleteRegistration).
+- [x] **Conversions API (Server-Side Proxy):** CAPI is implemented via a Vercel serverless function, ensuring the access token is not exposed client-side.
+- [x] **Event Deduplication:** `event_id` is used to deduplicate events between the browser (Pixel) and the server (CAPI).
+- [x] **Basic User Data Hashing:** User data parameters are hashed (SHA-256) on the server before being sent to Meta.
+- [x] **FBP/FBC Parameters:** `fbp` (browser ID) and `fbc` (click ID) cookies are correctly included in CAPI payloads.
+- [x] **Data Processing Options (DPO):** The implementation includes support for `data_processing_options` for CCPA and other privacy regulations.
 
-### Backend (`server/`)
-- Express.js CAPI proxy server
-- Endpoints: `POST /api/capi/event`, `GET /api/capi/health`
-- Enriches payloads with `client_ip_address` and `client_user_agent`
-- **Does NOT hash PII** — sends raw email/phone values to the Graph API
-- **No batch endpoint** — only single event submission
-- **No data processing options** — LDU/CCPA compliance missing
-- Access token stored in environment variables
+### What's Missing or Broken
 
-## Meta Pixel Setup
+- [ ] **No Phone Number Normalization:** Phone numbers are not normalized to the E.164 format before hashing, which can lower Event Match Quality.
+- [ ] **No Batching:** The original server code does not use the CAPI batch endpoint. Events are sent one by one, which is less efficient. (Note: A PR was added to demonstrate batching).
+- [ ] **Basic Error Handling:** The server-side proxy has minimal error handling and no retry logic for failed API calls.
+- [ ] **No Client-Side Advanced Matching:** The implementation does not attempt to capture user data from forms on the client-side for Advanced Matching.
+- [ ] **Simpler Parameter Structure:** This variant sends a more basic set of parameters compared to the 'Excellent' variant, which may limit reporting and optimization capabilities.
 
-### Base Pixel Code
-- **Pixel ID:** `1684145446350033`
-- **Location:** The base pixel code is loaded in the `<head>` tag of `index.html`.
-- **Noscript Fallback:** Included for users with JavaScript disabled.
+### Event Coverage
 
-### Advanced Matching
-- **User Data:** Basic user data is collected including email (`em`) and phone (`ph`).
-- **Missing Fields:** First name (`fn`), last name (`ln`), city (`ct`), state (`st`), zip code (`zp`) are NOT collected.
-- **Implementation:** User data is passed via client-side `fbq('init', ...)` and forwarded to the CAPI proxy.
+This table shows which events are firing from the browser (Pixel) and the server (CAPI).
 
-## Conversions API (CAPI) Setup
+| Event | Pixel (Browser) | CAPI (Server) |
+|---|:---:|:---:|
+| PageView | ✅ | ❌ |
+| ViewContent | ✅ | ✅ |
+| AddToCart | ✅ | ✅ |
+| InitiateCheckout | ✅ | ✅ |
+| Purchase | ✅ | ✅ |
+| Lead | ✅ | ✅ |
+| Search | ✅ | ✅ |
+| CompleteRegistration | ✅ | ✅ |
 
-### Method
-**Server-Side Proxy** — Events are sent from the browser to an Express.js backend, which enriches them with IP/UA and forwards to Meta's Conversions API. However, PII is NOT hashed server-side.
+### Parameter Completeness
 
-### Server Code Location
-- **Main proxy:** `server/capi-proxy.js` — Standalone Express server
-- **Package:** `server/package.json` — Dependencies and scripts
+This table shows which parameters are sent with each event. This implementation uses the same parameter set for all events.
 
-### Implementation Details
-- **Event Transmission:** Browser → `POST /api/capi/event` → Express proxy → `POST graph.facebook.com/v21.0/{pixel_id}/events`
-- **Access Token:** Stored in `META_ACCESS_TOKEN` environment variable
-- **PII Hashing:** **NOT IMPLEMENTED** — Raw PII values (email, phone) are sent directly to the Graph API. This is a significant security and compliance gap.
-- **IP Enrichment:** `client_ip_address` extracted from `X-Forwarded-For` header
-- **User Agent:** `client_user_agent` extracted from `User-Agent` header
-- **Data Processing Options:** **NOT IMPLEMENTED** — No LDU/CCPA/GDPR compliance
-- **Batch Support:** **NOT AVAILABLE** — Only single event endpoint exists
+| Event | `content_type` | `content_ids` | `value` | `currency` | `content_name` | `num_items` |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| ViewContent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| AddToCart | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| InitiateCheckout | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Purchase | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lead | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| CompleteRegistration | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-### Intentional Gaps
-1. **No PII Hashing:** Raw email and phone are sent to the Conversions API without SHA-256 hashing
-2. **No Data Processing Options:** `data_processing_options` field is completely absent
-3. **No Phone Normalization:** Phone numbers are not stripped of non-digit characters
-4. **Limited User Data:** Only `em` and `ph` are collected; `fn`, `ln`, `ct`, `st`, `zp` are missing
-5. **No Batch Endpoint:** Only single-event submission is supported
+### Architecture
 
-## Events Tracked
+The tracking for this variant is implemented using a server-side proxy deployed as a Vercel serverless function. 
 
-| Event Name           | Pixel | CAPI | Parameters Sent                                              | event_id |
-|----------------------|-------|------|--------------------------------------------------------------|----------|
-| PageView             | Yes   | Yes  | (none)                                                       | Yes      |
-| ViewContent          | Yes   | Yes  | `content_ids`, `content_type`, `content_name`, `value`, `currency` | Yes      |
-| AddToCart            | Yes   | Yes  | `content_ids`, `content_type`, `content_name`, `value`, `currency` | Yes      |
-| InitiateCheckout     | Yes   | Yes  | `content_ids`, `content_type`, `content_name`, `value`, `currency` | Yes      |
-| Purchase             | Yes   | Yes  | `content_ids`, `content_type`, `content_name`, `value`, `currency` | Yes      |
-| Lead                 | Yes   | Yes  | `content_name`, `value`, `currency`                            | Yes      |
-| CompleteRegistration | Yes   | Yes  | `content_name`, `value`, `currency`                            | Yes      |
-| Contact              | Yes   | Yes  | `content_name`, `value`, `currency`                            | Yes      |
-| Search               | Yes   | No   | `search_string`                                              | No       |
+1.  **Client-Side (Pixel):** The Meta Pixel base code and standard event tracking are implemented in the website's JavaScript. When a trackable action occurs (e.g., a user adds an item to the cart), the browser fires a Pixel event and also sends a request to a custom server-side endpoint.
+2.  **Server-Side (Proxy):** A Vercel serverless function receives the request from the client. This function is located in the `/api/capi/` directory. It takes the event data, securely adds the Meta CAPI access token (stored as an environment variable), hashes the user data, and then forwards the complete payload to the Meta Conversions API endpoint.
+3.  **Deduplication:** The client generates a unique `event_id` for each event. This ID is sent with both the Pixel event and the CAPI event, allowing Meta to deduplicate them and keep only the most reliable data.
 
-## Event Deduplication
-- **`event_id`:** Events are assigned a unique `event_id` that is sent with both the browser pixel and the CAPI payload.
-- **Deduplication Status:** Deduplication is implemented for most events. The `Search` event is pixel-only and does not have CAPI deduplication.
+This proxy architecture (`api/capi/event.js`, `api/capi/batch.js`, `api/capi/health.js`) ensures that the CAPI access token is never exposed in the browser, which is a critical security best practice.
 
-## User Data Parameters (EMQ)
+### How to Use This Variant
 
-| Parameter            | Collected | Hashed | Notes                           |
-|----------------------|-----------|--------|---------------------------------|
-| `em` (email)         | Yes       | **No** | Sent as raw text (gap)          |
-| `ph` (phone)         | Yes       | **No** | Sent as raw text, not normalized|
-| `fn` (first name)    | No        | —      | Not collected                   |
-| `ln` (last name)     | No        | —      | Not collected                   |
-| `ct` (city)          | No        | —      | Not collected                   |
-| `st` (state)         | No        | —      | Not collected                   |
-| `zp` (zip code)      | No        | —      | Not collected                   |
-| `external_id`        | No        | —      | Not collected                   |
-| `fbp`                | Yes       | No     | From `_fbp` cookie              |
-| `fbc`                | Yes       | No     | From `_fbc` cookie              |
-| `client_ip_address`  | Yes       | No     | Server-side (X-Forwarded-For)   |
-| `client_user_agent`  | Yes       | No     | Server-side (User-Agent header) |
-
-## Deployment
-
-### Frontend (GitHub Pages)
-The frontend is automatically deployed to GitHub Pages via the `gh-pages` branch.
-
-### Backend (Self-Hosted)
-```bash
-cd server
-npm install
-META_PIXEL_ID=your_pixel_id META_ACCESS_TOKEN=your_token node capi-proxy.js
-```
-
-## Security Considerations
-- **Access Token:** Stored in environment variables, not in client-side code
-- **PII Hashing:** **MISSING** — This is the most critical security gap. All PII should be SHA-256 hashed before sending to Meta.
-- **CORS:** Configured to allow cross-origin requests
-- **No Hardcoded Secrets:** No tokens committed to the repository
-
-## Known Issues
-1. **No PII Hashing** — Raw email/phone sent to Graph API (security risk)
-2. **No LDU/CCPA Compliance** — Missing `data_processing_options`
-3. **Limited User Data** — Only email and phone collected, missing address fields
-4. **No Batch Support** — Single event endpoint only
-5. **Search Event Gap** — Search is pixel-only, not sent via CAPI
-
----
-*This variant is part of the [Meta Pixel Quality Variants](https://github.com/mishaberman) collection for testing and educational purposes.*
+1.  **Browse the Site:** Navigate through the [live demo site](https://mishaberman.github.io/demo-ecommerce-good/) and perform actions like viewing products, adding to cart, and completing a purchase.
+2.  **Use Meta Pixel Helper:** Install the [Meta Pixel Helper](https://chrome.google.com/webstore/detail/meta-pixel-helper/fdgfkebogiimcoedlicjlajpkdmockpc) Chrome extension to see the Pixel events firing in your browser.
+3.  **Check Events Manager:** Go to your Meta Events Manager for Pixel ID `1684145446350033` to see the incoming Pixel and CAPI events. You can verify that events are being deduplicated correctly.
+4.  **Audit the Code:** Review the source code in the [GitHub repository](https://github.com/mishaberman/demo-ecommerce-good) to understand the implementation details of both the client-side tracking and the server-side proxy.
