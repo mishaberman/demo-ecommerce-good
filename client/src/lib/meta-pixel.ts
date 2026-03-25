@@ -189,17 +189,13 @@ async function sendCAPIEvent(eventName: string, eventData: CAPIEventData, eventI
     event_source_url: window.location.href,
     user_data: userData,
     custom_data: eventData,
+    test_event_code: 'TEST16343', // TODO: REMOVE before production deployment!
     // MISSING: data_processing_options
     // MISSING: data_processing_options_country
     // MISSING: data_processing_options_state
   };
 
-  // Include test_event_code — hardcoded for testing validation
-  // TODO: REMOVE before production deployment!
-  const testEventCode = getTestEventCode() || 'TEST16343';
-  (payload as Record<string, unknown>).test_event_code = testEventCode;
-
-  console.log(`[CAPI Server] Sending ${eventName}${testEventCode ? ` [TEST: ${testEventCode}]` : ''} — payload:`, JSON.parse(JSON.stringify(payload)));
+  console.log(`[CAPI Server] Sending ${eventName} [TEST: TEST16343] — payload:`, JSON.parse(JSON.stringify(payload)));
   try {
     const response = await fetch(CAPI_PROXY_URL, {
       method: 'POST',
