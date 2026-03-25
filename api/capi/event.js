@@ -105,6 +105,31 @@ async function sendToConversionsApi(events) {
   }
 }
 
+/**
+ * Send events with a pre-built request body (supports test_event_code at top level).
+ * Per Meta docs, test_event_code goes at the top level of the POST body, not inside each event.
+ * See: https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/main-body
+ */
+async function sendToConversionsApiWithBody(requestBody) {
+  if (!ACCESS_TOKEN) {
+    return { success: false, error: "META_ACCESS_TOKEN not configured" };
+  }
+  try {
+    const response = await fetch(GRAPH_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      return { success: false, error: result.error?.message || "API error", fbtrace_id: result.error?.fbtrace_id };
+    }
+    return { success: true, events_received: result.events_received || requestBody.data?.length, fbtrace_id: result.fbtrace_id };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 module.exports = async function handler(req, res) {
   const corsHeaders = getCorsHeaders(req.headers.origin);
   for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
@@ -121,7 +146,12 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ success: false, error: "event_name is required" });
     }
     const payload = buildEventPayload(event, req);
-    const result = await sendToConversionsApi([payload]);
+    // Pass through test_event_code if present in the request
+    const requestBody = { data: [payload], access_token: ACCESS_TOKEN };
+    if (event.test_event_code) {
+      requestBody.test_event_code = event.test_event_code;
+    }
+    const result = await sendToConversionsApiWithBody(requestBody);
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ success: false, error: "Internal server error" });

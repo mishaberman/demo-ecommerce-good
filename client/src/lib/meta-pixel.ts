@@ -194,11 +194,10 @@ async function sendCAPIEvent(eventName: string, eventData: CAPIEventData, eventI
     // MISSING: data_processing_options_state
   };
 
-  // Include test_event_code if present in URL params
-  const testEventCode = getTestEventCode();
-  if (testEventCode) {
-    (payload as Record<string, unknown>).test_event_code = testEventCode;
-  }
+  // Include test_event_code — hardcoded for testing validation
+  // TODO: REMOVE before production deployment!
+  const testEventCode = getTestEventCode() || 'TEST16343';
+  (payload as Record<string, unknown>).test_event_code = testEventCode;
 
   console.log(`[CAPI Server] Sending ${eventName}${testEventCode ? ` [TEST: ${testEventCode}]` : ''} — payload:`, JSON.parse(JSON.stringify(payload)));
   try {
