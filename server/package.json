@@ -1,0 +1,16 @@
+{
+  "name": "demo-ecommerce-good-capi-server",
+  "version": "1.0.0",
+  "description": "Server-side CAPI proxy for the Good demo variant. Has intentional gaps: no PII hashing, no data_processing_options, no batch endpoint.",
+  "main": "capi-proxy.js",
+  "scripts": {
+    "start": "node capi-proxy.js",
+    "dev": "node --watch capi-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
