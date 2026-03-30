@@ -22,10 +22,13 @@
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
       
-      // Advanced matching — only em and ph (missing fn, ln, external_id)
+      // Advanced matching with full PII support
       fbq('init', '1684145446350033', {
         em: '',
         ph: '',
+        fn: '',
+        ln: '',
+        external_id: '',
       });
       fbq('track', 'PageView');
     </script>
