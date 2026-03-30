@@ -22,10 +22,13 @@
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
       
-      // Advanced matching — only em and ph (missing fn, ln, external_id)
+      // Advanced matching with full PII support
       fbq('init', '1684145446350033', {
         em: '',
         ph: '',
+        fn: '',
+        ln: '',
+        external_id: '',
       });
       fbq('track', 'PageView');
     </script>
@@ -35,7 +38,7 @@
         src="https://www.facebook.com/tr?id=1684145446350033&ev=PageView&noscript=1" />
     </noscript>
     <!-- End Meta Pixel Code -->
-    <script type="module" crossorigin src="/demo-ecommerce-good/assets/index-BHaYHo_6.js"></script>
+    <script type="module" crossorigin src="/demo-ecommerce-good/assets/index-D8I_dVMA.js"></script>
     <link rel="stylesheet" crossorigin href="/demo-ecommerce-good/assets/index-BMdZ9_Lr.css">
   </head>
 
@@ -103,8 +106,8 @@ Error generating stack: `+l.message+`
     <div id="root"></div>
     <script
       defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+      src="https://manus-analytics.com/umami"
+      data-website-id="e6bd4584-6757-4256-88fb-adab23a519e8"></script>
   </body>
 
 </html>
