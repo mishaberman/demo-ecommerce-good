@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
-import { trackPurchase, trackLead } from "@/lib/meta-pixel";
+import { trackPurchase, trackLead, setUserPII } from "@/lib/meta-pixel";
 import { generateFakeCheckoutData } from "@/lib/fake-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,14 +76,20 @@ export default function Checkout() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Pass collected PII to the tracking layer (server will hash before sending to Meta)
+    setUserPII({
+      em: formData.email,
+      ph: formData.phone,
+      fn: formData.firstName,
+      ln: formData.lastName,
+    });
+
     // Fire Lead event for the email capture
-    // IMPROVEMENT: Should pass user data for advanced matching
     trackLead("checkout_form");
 
-    // Fire Purchase event
-    // IMPROVEMENT: Should include content_ids, content_type, num_items
+    // Fire Purchase event with num_items
     const contentIds = items.map((item) => item.product.id);
-    trackPurchase(totalPrice, "USD", contentIds);
+    trackPurchase(totalPrice, "USD", contentIds, totalItems);
 
     clearCart();
     setStep("success");
