@@ -5,7 +5,7 @@
 */
 
 import { useState, useEffect } from "react";
-import { trackContact, trackLead } from "@/lib/meta-pixel";
+import { trackContact, trackLead, setUserPII } from "@/lib/meta-pixel";
 import { generateFakeContactData } from "@/lib/fake-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,12 +49,19 @@ export default function Contact() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Pass collected PII to the tracking layer (server will hash before sending to Meta)
+    const nameParts = formData.name.split(' ');
+    setUserPII({
+      em: formData.email,
+      ph: formData.phone,
+      fn: nameParts[0] || '',
+      ln: nameParts.slice(1).join(' ') || '',
+    });
+
     // Fire Contact event
     trackContact();
 
     // Fire Lead event for the contact form submission
-    // IMPROVEMENT: Should pass value and currency for lead scoring
-    // IMPROVEMENT: Should pass user data (email, name) for advanced matching
     trackLead("contact_form");
 
     setSubmitted(true);
