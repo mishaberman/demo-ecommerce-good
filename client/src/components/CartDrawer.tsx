@@ -9,8 +9,9 @@ export default function CartDrawer() {
   const { items, isOpen, setIsOpen, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
 
   const handleCheckout = () => {
-    // Fire InitiateCheckout event
-    trackInitiateCheckout(totalPrice, "USD", totalItems);
+    // Fire InitiateCheckout event with content_ids
+    const contentIds = items.map((item) => item.product.id);
+    trackInitiateCheckout(totalPrice, "USD", totalItems, contentIds);
     setIsOpen(false);
   };
 
