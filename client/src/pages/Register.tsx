@@ -6,7 +6,7 @@
 */
 
 import { useState, useEffect } from "react";
-import { trackCompleteRegistration, trackLead } from "@/lib/meta-pixel";
+import { trackCompleteRegistration, trackLead, setUserPII } from "@/lib/meta-pixel";
 import { generateFakeRegisterData } from "@/lib/fake-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,13 +49,18 @@ export default function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Pass collected PII to the tracking layer (server will hash before sending to Meta)
+    setUserPII({
+      em: formData.email,
+      ph: formData.phone,
+      fn: formData.firstName,
+      ln: formData.lastName,
+    });
+
     // Fire CompleteRegistration event
-    // IMPROVEMENT: Should pass value and currency
-    // IMPROVEMENT: Should pass user data for advanced matching (email, phone, name)
     trackCompleteRegistration("email");
 
     // Fire Lead event for the registration
-    // IMPROVEMENT: Should pass value for lead scoring
     trackLead("registration_form");
 
     setSubmitted(true);
